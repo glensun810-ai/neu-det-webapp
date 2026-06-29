@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEU-DET 钢材表面缺陷检测系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>钢材表面缺陷检测系统</h1>
+            <p class="subtitle">基于 NEU-DET 数据集与 YOLOv8 的智能检测平台</p>
+        </header>
+
+        <!-- 模型状态 -->
+        <div class="model-status" id="modelStatus">
+            <span class="status-indicator"></span>
+            <span class="status-text">正在加载模型...</span>
+        </div>
+
+        <!-- 主功能区 -->
+        <div class="main-content">
+            <!-- 左侧：上传区域 -->
+            <div class="upload-section">
+                <div class="upload-box" id="uploadBox">
+                    <div class="upload-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <p class="upload-text">点击或拖拽图片上传</p>
+                    <p class="upload-hint">支持 JPG, JPEG, PNG, BMP 格式</p>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                </div>
+
+                <!-- 摄像头按钮 -->
+                <div class="camera-section">
+                    <button class="btn btn-secondary" id="cameraBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        实时摄像头检测
+                    </button>
+                    
+                    <button class="btn btn-primary" id="folderBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        选择文件夹批量检测
+                    </button>
+                </div>
+
+                <!-- 批量检测进度区域 -->
+                <div class="batch-section" id="batchSection" style="display: none;">
+                    <div class="batch-header">
+                        <h3>批量检测进度</h3>
+                        <span class="batch-info" id="batchInfo"></span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="batch-controls">
+                        <button class="btn btn-secondary" id="pauseBatch">暂停</button>
+                        <button class="btn btn-danger" id="stopBatch">停止</button>
+                    </div>
+                    <div class="current-image" id="currentImagePreview">
+                        <p>当前检测图片预览</p>
+                    </div>
+                </div>
+
+                <!-- 样本图片 -->
+                <div class="sample-section">
+                    <h3>快速测试样本</h3>
+                    <div class="sample-images" id="sampleImages">
+                        <!-- 将由JS动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：检测结果 -->
+            <div class="result-section">
+                <div class="result-header">
+                    <h2>检测结果</h2>
+                    <div class="result-stats" id="resultStats">
+                        <!-- 检测统计 -->
+                    </div>
+                </div>
+
+                <!-- 图片对比 -->
+                <div class="image-compare">
+                    <div class="image-box">
+                        <h3>原图</h3>
+                        <div class="image-container" id="originalImage">
+                            <div class="placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                                <p>等待上传图片</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="image-box">
+                        <h3>检测结果</h3>
+                        <div class="image-container" id="resultImage">
+                            <div class="placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                    <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                                <p>等待检测结果</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 检测详情列表 -->
+                <div class="detection-list" id="detectionList">
+                    <!-- 检测结果列表 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 摄像头弹窗 -->
+        <div class="modal" id="cameraModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>实时摄像头检测</h2>
+                    <button class="close-btn" id="closeCamera">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="camera-container">
+                        <video id="cameraVideo" autoplay playsinline></video>
+                        <canvas id="cameraCanvas" style="display: none;"></canvas>
+                    </div>
+                    <div class="camera-controls">
+                        <button class="btn btn-primary" id="captureBtn">拍照检测</button>
+                        <button class="btn btn-secondary" id="startCamera">开启摄像头</button>
+                        <button class="btn btn-danger" id="stopCamera">关闭摄像头</button>
+                    </div>
+                    <div class="camera-result" id="cameraResult">
+                        <!-- 实时检测结果 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 批量检测结果表格 -->
+        <div class="batch-results-section" id="batchResultsSection" style="display: none;">
+            <div class="batch-results-header">
+                <h2>批量检测结果清单</h2>
+                <div class="batch-summary" id="batchSummary"></div>
+                <button class="btn btn-secondary" id="exportResults">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    导出报告
+                </button>
+            </div>
+            <div class="results-table-container">
+                <table class="results-table" id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>文件名</th>
+                            <th>缺陷数量</th>
+                            <th>缺陷类型</th>
+                            <th>置信度</th>
+                            <th>检测结果图</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <!-- 动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 加载提示 -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+            <p>正在检测中...</p>
+        </div>
+
+        <!-- 底部信息 -->
+        <footer class="footer">
+            <div class="footer-info">
+                <h3>缺陷类型说明</h3>
+                <div class="defect-types">
+                    {% for id, name in defect_names.items() %}
+                    <div class="defect-item">
+                        <span class="defect-id">{{ id }}</span>
+                        <span class="defect-name">{{ name }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="footer-links">
+                <p>数据来源: 东北大学 NEU-DET 数据集 | 检测模型: YOLOv8</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
