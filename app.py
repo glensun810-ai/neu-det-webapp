@@ -300,8 +300,8 @@ def serve_static(filename):
 
 @app.route('/samples/<path:filename>')
 def serve_samples(filename):
-    """提供样本图片"""
-    samples_dir = os.path.join(BASE_DIR, '..', 'fa031-main', 'NEU-DET', 'NEU-DET', 'valid', 'images')
+    """提供样本图片（从 static/samples/ 目录加载）"""
+    samples_dir = os.path.join(BASE_DIR, 'static', 'samples')
     return send_from_directory(samples_dir, filename)
 
 
